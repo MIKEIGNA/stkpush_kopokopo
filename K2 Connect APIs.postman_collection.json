@@ -1,0 +1,435 @@
+{
+	"info": {
+		"_postman_id": "89d1082a-cd1c-4709-aced-8e804cf3d8b0",
+		"name": "K2 Connect APIs",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "41521769"
+	},
+	"item": [
+		{
+			"name": "Request Application Authorization",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://api.kopokopo.com/oauth/token?grant_type=client_credentials&client_id=gGWQm4hFEn5iqI_9pz_-6ki5yfZY_G7aSecF0bUMiH8&client_secret=opQW-Q7duzJ3FnrV7d7hM21o8ixEViM-dX21q9AX5E4",
+					"protocol": "https",
+					"host": [
+						"api",
+						"kopokopo",
+						"com"
+					],
+					"path": [
+						"oauth",
+						"token"
+					],
+					"query": [
+						{
+							"key": "grant_type",
+							"value": "client_credentials"
+						},
+						{
+							"key": "client_id",
+							"value": "gGWQm4hFEn5iqI_9pz_-6ki5yfZY_G7aSecF0bUMiH8"
+						},
+						{
+							"key": "client_secret",
+							"value": "opQW-Q7duzJ3FnrV7d7hM21o8ixEViM-dX21q9AX5E4"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Webhook Subscription",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer <ACCESS-TOKEN>",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"event_type\": \"\",\n    \"url\": \"\",\n    \"scope\": \"\",\n    \"scope_reference\": \"\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "https://sandbox.kopokopo.com/api/v1/webhook_subscriptions"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Request Status",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer <ACCESS-TOKEN>",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": "<LOCATION-URL>"
+			},
+			"response": []
+		},
+		{
+			"name": "Initiate Incoming Payments Request(STK Push)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Cache-Control",
+						"value": "no-cache",
+						"name": "cache-control",
+						"type": "text"
+					},
+					{
+						"key": "Postman-Token",
+						"value": "<calculated when request is sent>",
+						"name": "postman-token",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"name": "content-type",
+						"type": "text"
+					},
+					{
+						"key": "Content-Length",
+						"value": "<calculated when request is sent>",
+						"name": "content-length",
+						"type": "text"
+					},
+					{
+						"key": "Host",
+						"value": "<calculated when request is sent>",
+						"name": "host",
+						"type": "text"
+					},
+					{
+						"key": "User-Agent",
+						"value": "PostmanRuntime/7.39.1",
+						"name": "user-agent",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "*/*",
+						"name": "accept",
+						"type": "text"
+					},
+					{
+						"key": "Accept-Encoding",
+						"value": "gzip, deflate, br",
+						"name": "accept-encoding",
+						"type": "text"
+					},
+					{
+						"key": "Connection",
+						"value": "keep-alive",
+						"name": "connection",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer z6oLPXof-uvlxT7SEbw_DCA49nSk4nodP1kZQvxtnKg",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "// {\n//     \"payment_channel\": \"\",\n//     \"till_number\": \"\",\n//     \"subscriber\": {\n//         \"first_name\": \"\",\n//         \"last_name\": \"\",\n//         \"phone_number\": \"\",\n//         \"email\": \"\"\n//     },\n//     \"amount\": {\n//         \"currency\": \"KES\",\n//         \"value\": \"\"\n//     },\n//     \"metadata\": {\n//         \"something\": \"\",\n//         \"something_else\": \"Something else\"\n//     },\n//     \"_links\": {\n//         \"callback_url\": \"\"\n//     }\n// }\n{\n  \"payment_channel\" : \"M-PESA STK Push\",\n  \"till_number\" : \"K856735\",\n  \"subscriber\": {\n    \"first_name\": \"Lucy\",\n    \"last_name\": \"Irungu\",\n    \"phone_number\": \"0791869381\",\n    \"email\": \"lucieirungu006@gmail.com\"\n  },\n  \"amount\": {\n    \"currency\": \"KES\",\n    \"value\": 1\n  },\n  \"metadata\":{\n    \"customer_id\": \"123456789\",\n    \"reference\": \"123456\",\n    \"notes\": \"Payment for invoice 12345\"\n  },\n  \"_links\" : {\n    \"callback_url\": \"https://fjrbyesvz.localto.net/receive/\"\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "https://api.kopokopo.com/api/v1/incoming_payments"
+			},
+			"response": []
+		},
+		{
+			"name": "Add Merchant Mobile Wallet",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer <ACCESS-TOKEN>",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"phone_number\": \"\",\n    \"first_name\": \"\",\n    \"last_name\": \"\",\n    \"network\": \"\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "https://sandbox.kopokopo.com/api/v1/merchant_wallets"
+			},
+			"response": []
+		},
+		{
+			"name": "Add Merchant Bank Account",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer <ACCESS-TOKEN>",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"account_name\": \"\",\n    \"settlement_method\": \"\",\n    \"bank_branch_ref\": \"\",\n    \"account_number\": \"\"\n}"
+				},
+				"url": "https://sandbox.kopokopo.com/api/v1/merchant_bank_accounts"
+			},
+			"response": []
+		},
+		{
+			"name": "Initiate Settlement Transfer",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer <ACCESS-TOKEN>",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"destination_type\": \"\",\n    \"destination_reference\": \"\",\n    \"amount\": {\n        \"currency\": \"KES\",\n        \"value\": \"\"\n    },\n    \"metadata\": {\n        \"something\": \"\",\n        \"something_else\": \"Something else\"\n    },\n    \"_links\": {\n        \"callback_url\": \"\"\n    }\n}"
+				},
+				"url": "https://sandbox.kopokopo.com/api/v1/settlement_transfers"
+			},
+			"response": []
+		},
+		{
+			"name": "Add Mobile Pay Recipient",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer <ACCESS-TOKEN>",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"type\": \"mobile_wallet\",\n  \"pay_recipient\": {\n    \"first_name\": \"\",\n    \"last_name\": \"\",\n    \"email\": \"\",\n    \"phone_number\": \"\",\n    \"network\": \"\"\n  }\n}"
+				},
+				"url": "https://sandbox.kopokopo.com/api/v1/pay_recipients"
+			},
+			"response": []
+		},
+		{
+			"name": "Add Bank Pay Recipient",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer <ACCESS-TOKEN>",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"type\": \"bank_account\",\n    \"pay_recipient\": {\n        \"account_name\": \"\",\n        \"bank_branch_ref\": \"\",\n        \"account_number\": \"\",\n        \"settlement_method\": \"EFT\"\n    }\n}"
+				},
+				"url": "https://sandbox.kopokopo.com/api/v1/pay_recipients"
+			},
+			"response": []
+		},
+		{
+			"name": "Pay Request",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer <ACCESS-TOKEN>",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"destination_type\": \"\",\n    \"destination_reference\": \"\",\n    \"amount\": {\n        \"currency\": \"KES\",\n        \"value\": \"\"\n    },\n    \"metadata\": {\n        \"something\": \"\",\n        \"something_else\": \"Something else\"\n    },\n    \"_links\": {\n        \"callback_url\": \"\"\n    }\n}"
+				},
+				"url": "https://sandbox.kopokopo.com/api/v1/payments"
+			},
+			"response": []
+		},
+		{
+			"name": "Add External Till Pay Recipient",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer <ACCESS-TOKEN>",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"type\": \"till\",\n    \"pay_recipient\": {\n        \"till_name\": \"\",\n        \"till_number\": \"\"\n    }\n}"
+				},
+				"url": "https://sandbox.kopokopo.com/api/v1/pay_recipients"
+			},
+			"response": []
+		},
+		{
+			"name": "Add Kopo Kopo Merchant Pay Recipient",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer <ACCESS-TOKEN>",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"type\": \"kopo_kopo_merchant\",\n    \"pay_recipient\": {\n        \"alias_name\": \"\",\n        \"till_number\": \"\"\n    }\n}"
+				},
+				"url": "https://sandbox.kopokopo.com/api/v1/pay_recipients"
+			},
+			"response": []
+		}
+	]
+}
