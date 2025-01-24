@@ -30,13 +30,13 @@ function init_kopokopo_class() {
 
 			// Setup our default vars
 			$this->id                 = 'kopokopo';
-			$this->method_title       = __('PayTalk.co.ke(KopoKopo)', 'woocommerce');
-			$this->method_description = __('Paytalk KopoKopo gateway works by adding form fields on the checkout page and then sending the details to Paytalk.co.ke for verification and processing. Get API keys from <a href="https://app.kopokopo.com" target="_blank">https://app.kopokopo.com</a>', 'woocommerce');
+			$this->method_title       = __('Lucie(KopoKopo)', 'woocommerce');
+			$this->method_description = __('Lucie KopoKopo gateway works by adding form fields on the checkout page and then sending the details to Paytalk.co.ke for verification and processing. Get API keys from <a href="https://app.kopokopo.com" target="_blank">https://app.kopokopo.com</a>', 'woocommerce');
 			$this->icon               = plugins_url( '/images/paytalk_160x68.png', __FILE__ );
 			$this->has_fields         = true;
 			$this->supports           = array( 'products' );
 			
-			$this->liveurl            = 'https://developer.paytalk.co.ke/api/';
+			$this->liveurl            = 'https://api.kopokopo.com/';
 
 			$this->init_form_fields();
 			$this->init_settings();
@@ -216,7 +216,7 @@ function init_kopokopo_class() {
 		
 		$trans_key = $this->trans_key;
 
-		$environment_url = 'https://developer.paytalk.co.ke/api/kopokopo/';
+		$environment_url = 'https://api.kopokopo.com/payment_requests';
 
 		$mpesa_phone    = isset($_POST['mpesa_phone']) ? woocommerce_clean($_POST['mpesa_phone']) : '';
 		$mpesa_code    = isset($_POST['mpesa_code']) ? woocommerce_clean($_POST['mpesa_code']) : '';
