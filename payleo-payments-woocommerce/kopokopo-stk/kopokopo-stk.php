@@ -3,7 +3,7 @@
  * Plugin Name: Kopokopo STK Push Gateway
  * Plugin URI:  https://thekenyanprogrammer.co.ke/
  * Description: WooCommerce payment gateway using Kopokopo STK Push with a "Pay Now" button before checkout.
- * Version:     1.1.1
+ * Version:     1.1.2
  * Author:      Jovi
  * Author URI:  https://thekenyanprogrammer.co.ke/
  * License:     GPL-2.0+
@@ -92,70 +92,17 @@ function init_kopokopo_gateway()
             );
         }
 
-        public function payment_fields()
-        {
-            ?>
-            <p><?php echo esc_html($this->description); ?></p>
-            <fieldset>
-                <label for="kopokopo_phone">Phone Number <span class="required">*</span></label>
-                <input type="text" id="kopokopo_phone" name="kopokopo_phone" required placeholder="07XXXXXXXX" />
-                <button type="button" id="kopokopo_pay_now" class="button">Pay Now</button>
-                <p id="kopokopo_status" style="margin-top: 10px;"></p>
-                <input type="hidden" id="kopokopo_payment_status" name="kopokopo_payment_status" value="0">
-            </fieldset>
-
-            <script>
-               jQuery(document).ready(function($) {
-                $('#kopokopo_pay_now').on('click', function() {
-                    var phone = $('#kopokopo_phone').val();
-                    var total = '<?php echo WC()->cart->get_total(); ?>'.replace(/[^\d.]/g, ''); // Extract only the numeric value
-
-                    if (!phone || !phone.match(/^07\d{8}$/)) {
-                        alert('Please enter a valid M-PESA phone number (e.g., 07XXXXXXXX)');
-                        return;
-                    }
-
-                    $('#kopokopo_status').text('Sending STK Push...');
-
-                    $.ajax({
-                        type: 'POST',
-                        url: '<?php echo admin_url('admin-ajax.php'); ?>',
-                        data: {
-                            action: 'kopokopo_stk_push',
-                            phone: phone,
-                            amount: total // Correct numeric amount
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                $('#kopokopo_status').text('Payment request sent. Please complete on your phone.');
-                                $('#kopokopo_payment_status').val('1'); // Payment done
-                            } else {
-                                $('#kopokopo_status').text('Payment failed: ' + response.message);
-                                $('#kopokopo_payment_status').val('0');
-                            }
-                        }
-                    });
-                });
-
-                $('form.checkout').on('submit', function(e) {
-                    if ($('#kopokopo_payment_status').val() !== '1') {
-                        e.preventDefault();
-                        alert('Please complete payment before placing the order.');
-                    }
-                });
-            });
-
-            </script>
-            <?php
-        }
-
         public function kopokopo_stk_push()
         {
             $phone = sanitize_text_field($_POST['phone']);
             $amount = sanitize_text_field($_POST['amount']);
 
             // Convert 07XXXXXXXX to 2547XXXXXXXX
-            $phone = '254' . substr($phone, 1);
+            if (preg_match('/^07\d{8}$/', $phone)) {
+                $phone = '254' . substr($phone, 1);
+            } else {
+                wp_send_json(['success' => false, 'message' => 'Invalid phone number format.']);
+            }
 
             $token = $this->get_access_token();
             if (!$token) {
@@ -164,7 +111,7 @@ function init_kopokopo_gateway()
 
             $response = $this->initiate_stk_push($token, $phone, $amount);
             if ($response && isset($response->data->id)) {
-                wp_send_json(['success' => true, 'message' => 'STK Push sent successfully.']);
+                wp_send_json(['success' => true, 'message' => 'STK Push sent successfully.', 'reference' => $response->data->id]);
             } else {
                 wp_send_json(['success' => false, 'message' => 'STK Push failed.']);
             }
