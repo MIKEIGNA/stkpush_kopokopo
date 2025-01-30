@@ -1,6 +1,6 @@
-<?php
+<?phpfi
 /**
- * Plugin Name: Kopokopo STK Push Gateway
+ * Plugin Name: Kopokopo STKr Push Gateway
  * Plugin URI:  https://thekenyanprogrammer.co.ke/
  * Description: WooCommerce payment gateway using Kopokopo STK Push with a "Pay Now" button before checkout.
  * Version:     1.1.7
@@ -134,7 +134,7 @@ function init_kopokopo_gateway()
                             } else {
                               
                                 $('#kopokopo_status').text('Payment failed: ' + response.message);
-                                console.error('Error occurred:', xhr.responseText);
+                                console.error('Error occurred:', response.message);
                             }
                         },
                         error: function(xhr, status, error) {  // Add error handler
@@ -222,10 +222,16 @@ function init_kopokopo_gateway()
             }
     
             $data = json_decode(wp_remote_retrieve_body($response), true); // Decode as associative array
+            if ($data) {
+                error_log('Access token retrieved successfully.');
+            } else {
+                error_log('Failed to retrieve access token.');
+            }
             return $data['access_token'] ?? false;
         }
     
         private function initiate_stk_push($order, $phone_number, $token) { // Correct parameters
+            error_log('Initiating STK push...');
             $url = 'https://api.kopokopo.com/api/v1/incoming_payments'; // Correct endpoint
             $body = [
                 'payment_channel' => 'M-PESA STK Push',
@@ -237,7 +243,9 @@ function init_kopokopo_gateway()
                 ],
                 '_links' => ['callback_url' => $this->callback_url],
             ];
-    
+        
+            error_log('STK push body: ' . json_encode($body));
+        
             $args = [
                 'body' => json_encode($body),
                 'headers' => [
@@ -245,9 +253,17 @@ function init_kopokopo_gateway()
                     'Content-Type' => 'application/json',
                 ],
             ];
-    
+        
+            error_log('STK push args: ' . json_encode($args));
+        
             $response = wp_remote_post($url, $args);
-    
+        
+            if (is_wp_error($response)) {
+                error_log('STK push request failed: ' . $response->get_error_message());
+            } else {
+                error_log('STK push response: ' . wp_remote_retrieve_body($response));
+            }
+        
             return json_decode(wp_remote_retrieve_body($response), true); // Decode as associative array
         }
     }
