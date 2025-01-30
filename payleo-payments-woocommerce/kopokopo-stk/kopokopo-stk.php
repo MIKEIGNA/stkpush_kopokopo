@@ -105,45 +105,46 @@ function init_kopokopo_gateway()
             </fieldset>
 
             <script>
-                jQuery(document).ready(function($) {
-                    $('#kopokopo_pay_now').on('click', function() {
-                        var phone = $('#kopokopo_phone').val();
-                        var total = '<?php echo WC()->cart->get_total(); ?>';
+               jQuery(document).ready(function($) {
+                $('#kopokopo_pay_now').on('click', function() {
+                    var phone = $('#kopokopo_phone').val();
+                    var total = '<?php echo WC()->cart->get_total(); ?>'.replace(/[^\d.]/g, ''); // Extract only the numeric value
 
-                        if (!phone || !phone.match(/^07\d{8}$/)) {
-                            alert('Please enter a valid M-PESA phone number (e.g., 07XXXXXXXX)');
-                            return;
-                        }
+                    if (!phone || !phone.match(/^07\d{8}$/)) {
+                        alert('Please enter a valid M-PESA phone number (e.g., 07XXXXXXXX)');
+                        return;
+                    }
 
-                        $('#kopokopo_status').text('Sending STK Push...');
+                    $('#kopokopo_status').text('Sending STK Push...');
 
-                        $.ajax({
-                            type: 'POST',
-                            url: '<?php echo admin_url('admin-ajax.php'); ?>',
-                            data: {
-                                action: 'kopokopo_stk_push',
-                                phone: phone,
-                                amount: total
-                            },
-                            success: function(response) {
-                                if (response.success) {
-                                    $('#kopokopo_status').text('Payment request sent. Please complete on your phone.');
-                                    $('#kopokopo_payment_status').val('1'); // Payment done
-                                } else {
-                                    $('#kopokopo_status').text('Payment failed: ' + response.message);
-                                    $('#kopokopo_payment_status').val('0');
-                                }
+                    $.ajax({
+                        type: 'POST',
+                        url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                        data: {
+                            action: 'kopokopo_stk_push',
+                            phone: phone,
+                            amount: total // Correct numeric amount
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                $('#kopokopo_status').text('Payment request sent. Please complete on your phone.');
+                                $('#kopokopo_payment_status').val('1'); // Payment done
+                            } else {
+                                $('#kopokopo_status').text('Payment failed: ' + response.message);
+                                $('#kopokopo_payment_status').val('0');
                             }
-                        });
-                    });
-
-                    $('form.checkout').on('submit', function(e) {
-                        if ($('#kopokopo_payment_status').val() !== '1') {
-                            e.preventDefault();
-                            alert('Please complete payment before placing the order.');
                         }
                     });
                 });
+
+                $('form.checkout').on('submit', function(e) {
+                    if ($('#kopokopo_payment_status').val() !== '1') {
+                        e.preventDefault();
+                        alert('Please complete payment before placing the order.');
+                    }
+                });
+            });
+
             </script>
             <?php
         }
