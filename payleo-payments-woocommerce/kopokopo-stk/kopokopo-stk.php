@@ -3,7 +3,7 @@
  * Plugin Name: Kopokopo STK Push Gateway
  * Plugin URI:  https://thekenyanprogrammer.co.ke/
  * Description: WooCommerce payment gateway using Kopokopo STK Push with a "Pay Now" button before checkout.
- * Version:     1.1.5
+ * Version:     1.1.6
  * Author:      Jovi
  * Author URI:  https://thekenyanprogrammer.co.ke/
  * License:     GPL-2.0+
@@ -126,25 +126,20 @@ function init_kopokopo_gateway()
                         },
                         success: function(response) {
                             if (response.success) {
-                                console.log({
-                                    action: 'kopokopo_stk_push',
-                                    phone: phone,
-                                    amount: amount
-                                });
-
+                             
+                                console.log('Kopokopo STK Push Success:', response); // Log the whole response
                                 $('#kopokopo_status').text('Payment request sent. Please complete on your phone.');
                                 $('#kopokopo_payment_status').val('1');
                                 console.log('Payment request sent successfully:', response);
                             } else {
-                                console.log({
-                                    action: 'kopokopo_stk_push',
-                                    phone: phone,
-                                    amount: amount
-                                });
-
+                              
                                 $('#kopokopo_status').text('Payment failed: ' + response.message);
                                 console.error('Error occurred:', xhr.responseText);
                             }
+                        },
+                        error: function(xhr, status, error) {  // Add error handler
+                            console.error('AJAX Error:', status, error, xhr.responseText); // Log details
+                            $('#kopokopo_status').text('An error occurred. Please try again.');
                         }
                     });
                 });
@@ -170,14 +165,18 @@ function init_kopokopo_gateway()
 
             $token = $this->get_access_token();
             if (!$token) {
-                wp_send_json(['success' => false, 'message' => 'Authentication failed.']);
+                // wp_send_json(['success' => false, 'message' => 'Authentication failed.']);
+                wp_send_json_error(['message' => 'Authentication failed.']); // Use wp_send_json_error
+
             }
 
             $response = $this->initiate_stk_push($token, $phone, $amount);
             if ($response && isset($response->data->id)) {
                 wp_send_json(['success' => true, 'message' => 'STK Push sent successfully.']);
             } else {
-                wp_send_json(['success' => false, 'message' => 'STK Push failed.']);
+                // wp_send_json(['success' => false, 'message' => 'STK Push failed.']);
+                wp_send_json_error(['message' => 'STK Push failed.', 'response' => $response]); // Include more info
+
             }
         }
 
