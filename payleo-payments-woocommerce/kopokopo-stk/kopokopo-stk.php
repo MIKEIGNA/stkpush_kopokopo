@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Kopokopo STK Push Gateway
  * Plugin URI:  https://thekenyanprogrammer.co.ke/
- * Description: WooCommerce payment gateway using Kopokopo STK Push with a "Pay Now" button before checkout.
+ * Description: WooCommerce payment gateway using Kopokopo STK Push with a "Pay Now" button before checkout, plus a WP REST API callback.
  * Version:     1.1.8
  * Author:      Jovi
  * Author URI:  https://thekenyanprogrammer.co.ke/
@@ -48,6 +48,8 @@ function init_kopokopo_gateway()
             $this->client_id    = $this->get_option('client_id');
             $this->client_secret= $this->get_option('client_secret');
             $this->till_number  = $this->get_option('till_number');
+            // In your plugin's settings, set this callback URL to 
+            // e.g. https://YOURDOMAIN.com/wp-json/kopokopo/v1/kopokopo_callback
             $this->callback_url = $this->get_option('callback_url');
 
             // Save admin settings
@@ -60,27 +62,43 @@ function init_kopokopo_gateway()
             add_action('wp_ajax_kopokopo_stk_push', array($this, 'kopokopo_stk_push'));
             add_action('wp_ajax_nopriv_kopokopo_stk_push', array($this, 'kopokopo_stk_push'));
 
-            // Handle callback if ?kopokopo_callback=1 is present
-            add_action('init', array($this, 'maybe_handle_kopokopo_callback'));
+            // REST API callback route
+            add_action('rest_api_init', array($this, 'register_kopokopo_rest_routes'));
         }
 
         /**
-         * If KopoKopo calls your Callback URL (e.g. https://YOURDOMAIN.com/?kopokopo_callback=1),
-         * we return a JSON success response for demonstration.
+         * Register a custom REST route:
+         *  https://YOURDOMAIN.com/wp-json/kopokopo/v1/kopokopo_callback
          */
-        public function maybe_handle_kopokopo_callback()
+        public function register_kopokopo_rest_routes()
         {
-            if (isset($_GET['kopokopo_callback']) && $_GET['kopokopo_callback'] == 1) {
-                // Log the callback data if you like
-                // error_log("Kopokopo callback: " . print_r($_REQUEST, true));
+            register_rest_route(
+                'kopokopo/v1',
+                '/kopokopo_callback',
+                array(
+                    'methods'  => array('GET','POST'), // KopoKopo typically sends POST
+                    'callback' => array($this, 'handle_kopokopo_rest_callback'),
+                )
+            );
+        }
 
-                // Return a JSON success response
-                header('Content-Type: application/json; charset=utf-8');
-                wp_send_json(array(
-                    'status'  => 'success',
-                    'message' => 'Kopokopo callback received.'
-                ), 200);
-            }
+        /**
+         * Handle the Kopokopo REST callback.
+         * Returns a simple "success" JSON by default.
+         * You can parse the request body here and update orders as needed.
+         */
+        public function handle_kopokopo_rest_callback(\WP_REST_Request $request)
+        {
+            // If needed, log the data for debugging:
+            // error_log("Kopokopo Callback Data: " . print_r($request->get_params(), true));
+
+            // Return a success JSON response
+            $response_data = array(
+                'status'  => 'success',
+                'message' => 'Kopokopo callback received.'
+            );
+
+            return new \WP_REST_Response($response_data, 200);
         }
 
         /**
@@ -120,7 +138,7 @@ function init_kopokopo_gateway()
                 'callback_url' => array(
                     'title'       => 'Callback URL',
                     'type'        => 'text',
-                    'description' => 'Publicly accessible URL KopoKopo will send payment confirmation to. Example: https://YOURDOMAIN.com/?kopokopo_callback=1',
+                    'description' => 'Example: https://YOURDOMAIN.com/wp-json/kopokopo/v1/kopokopo_callback',
                 ),
             );
         }
