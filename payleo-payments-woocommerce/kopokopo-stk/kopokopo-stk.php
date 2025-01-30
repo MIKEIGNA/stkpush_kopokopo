@@ -156,36 +156,172 @@ function init_kopokopo_gateway()
             <?php
         }
 
-        public function kopokopo_stk_push()
-        {
+        // public function kopokopo_stk_push()
+        // {
+        //     $phone = sanitize_text_field($_POST['phone']);
+        //     $amount = sanitize_text_field($_POST['amount']);
+
+        //     $phone = '254' . substr($phone, 1);
+
+        //     $token = $this->get_access_token();
+        //     if (!$token) {
+        //         // wp_send_json(['success' => false, 'message' => 'Authentication failed.']);
+        //         wp_send_json_error(['message' => 'Authentication failed.']); // Use wp_send_json_error
+
+        //     }
+
+        //     $response = $this->initiate_stk_push($token, $phone, $amount);
+        //     if ($response && isset($response->data->id)) {
+        //         wp_send_json(['success' => true, 'message' => 'STK Push sent successfully.']);
+        //     } else {
+        //         // wp_send_json(['success' => false, 'message' => 'STK Push failed.']);
+        //         wp_send_json_error(['message' => 'STK Push failed.', 'response' => $response]); // Include more info
+
+        //     }
+        // }
+        // private function get_bearer_token()
+        //     {
+        //         $url = 'https://api.kopokopo.com/oauth/token';
+        //         $body = array(
+        //             'grant_type' => 'client_credentials',
+        //             'client_id' => $this->client_id,
+        //             'client_secret' => $this->client_secret,
+        //         );
+
+        //         $response = wp_remote_post($url, array(
+        //             'body' => json_encode($body),
+        //             'headers' => array('Content-Type' => 'application/json'),
+        //         ));
+
+        //         if (is_wp_error($response)) {
+        //             return false;
+        //         }
+
+        //         $data = json_decode(wp_remote_retrieve_body($response), true);
+        //         return $data['access_token'] ?? false;
+        //     }
+
+        //     private function initiate_stk_push($order, $phone_number, $token)
+        //     {
+        //         $url = 'https://api.kopokopo.com/api/v1/incoming_payments';
+        //         $body = array(
+        //             'payment_channel' => 'M-PESA STK Push',
+        //             'till_number' => $this->till_number,
+        //             'subscriber' => array(
+        //                 'phone_number' => $phone_number,
+        //             ),
+        //             'amount' => array(
+        //                 'currency' => 'KES',
+        //                 'value' => $order->get_total(),
+        //             ),
+        //             '_links' => array(
+        //                 'callback_url' => $this->callback_url,
+        //             ),
+        //         );
+
+        //         $response = wp_remote_post($url, array(
+        //             'body' => json_encode($body),
+        //             'headers' => array(
+        //                 'Authorization' => 'Bearer ' . $token,
+        //                 'Content-Type' => 'application/json',
+        //             ),
+        //         ));
+
+        //         return json_decode(wp_remote_retrieve_body($response), true);
+        //     }
+
+        // private function get_access_token()
+        // {
+        //     $url = 'https://api.kopokopo.com/oauth/token';
+        //     $response = wp_remote_post($url, ['body' => json_encode(['grant_type' => 'client_credentials', 'client_id' => $this->client_id, 'client_secret' => $this->client_secret]), 'headers' => ['Content-Type' => 'application/json']]);
+        //     $data = json_decode(wp_remote_retrieve_body($response));
+        //     return $data->access_token ?? false;
+        // }
+
+        public function kopokopo_stk_push() {
             $phone = sanitize_text_field($_POST['phone']);
-            $amount = sanitize_text_field($_POST['amount']);
-
+            $amount = sanitize_text_field($_POST['amount']); // You might remove this later
             $phone = '254' . substr($phone, 1);
-
+    
             $token = $this->get_access_token();
             if (!$token) {
-                // wp_send_json(['success' => false, 'message' => 'Authentication failed.']);
-                wp_send_json_error(['message' => 'Authentication failed.']); // Use wp_send_json_error
-
+                wp_send_json_error(['message' => 'Authentication failed.']);
             }
-
-            $response = $this->initiate_stk_push($token, $phone, $amount);
-            if ($response && isset($response->data->id)) {
-                wp_send_json(['success' => true, 'message' => 'STK Push sent successfully.']);
+    
+            // Get the WooCommerce order object (you'll need the order ID)
+            // This is a simplified example. You'll need to adapt it based on how you're getting the order ID.
+            // If this is called *before* checkout, you will need to create a draft order first, and then get the order object.
+            $order_id = WC()->session->get('order_id'); // Example: getting from session
+            if(!$order_id){
+                $order = wc_create_order();
+                $order_id = $order->get_id();
+                WC()->session->set('order_id', $order_id);
+                WC()->session->set('kopokopo_phone', $phone);
+    
+            }else{
+                $order = wc_get_order($order_id);
+            }
+    
+    
+            if (!$order) {
+                wp_send_json_error(['message' => 'Order not found.']);
+            }
+    
+            $response = $this->initiate_stk_push($order, $phone, $token);  // Pass the $order object
+    
+            error_log("Kopokopo STK Push Response: " . print_r($response, true));
+    
+            if ($response && isset($response['data']['id'])) { // Access data correctly
+                wp_send_json_success(['message' => 'STK Push sent successfully.', 'order_id' => $order_id]);
             } else {
-                // wp_send_json(['success' => false, 'message' => 'STK Push failed.']);
-                wp_send_json_error(['message' => 'STK Push failed.', 'response' => $response]); // Include more info
-
+                wp_send_json_error(['message' => 'STK Push failed.', 'response' => $response]);
             }
         }
-
-        private function get_access_token()
-        {
+    
+        private function get_access_token() {
             $url = 'https://api.kopokopo.com/oauth/token';
-            $response = wp_remote_post($url, ['body' => json_encode(['grant_type' => 'client_credentials', 'client_id' => $this->client_id, 'client_secret' => $this->client_secret]), 'headers' => ['Content-Type' => 'application/json']]);
-            $data = json_decode(wp_remote_retrieve_body($response));
-            return $data->access_token ?? false;
+            $body = json_encode(['grant_type' => 'client_credentials', 'client_id' => $this->client_id, 'client_secret' => $this->client_secret]);
+            $args = ['body' => $body, 'headers' => ['Content-Type' => 'application/json']];
+    
+            error_log("Kopokopo Access Token Request: " . print_r($args, true));
+    
+            $response = wp_remote_post($url, $args);
+    
+            error_log("Kopokopo Access Token Response: " . print_r($response, true));
+    
+            if (is_wp_error($response)) {
+                error_log("Kopokopo Access Token WP Error: " . $response->get_error_message());
+                return false;
+            }
+    
+            $data = json_decode(wp_remote_retrieve_body($response), true); // Decode as associative array
+            return $data['access_token'] ?? false;
+        }
+    
+        private function initiate_stk_push($order, $phone_number, $token) { // Correct parameters
+            $url = 'https://api.kopokopo.com/api/v1/incoming_payments'; // Correct endpoint
+            $body = [
+                'payment_channel' => 'M-PESA STK Push',
+                'till_number' => $this->till_number,
+                'subscriber' => ['phone_number' => $phone_number],
+                'amount' => [
+                    'currency' => 'KES',
+                    'value' => $order->get_total(), // Use $order->get_total()
+                ],
+                '_links' => ['callback_url' => $this->callback_url],
+            ];
+    
+            $args = [
+                'body' => json_encode($body),
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $token,
+                    'Content-Type' => 'application/json',
+                ],
+            ];
+    
+            $response = wp_remote_post($url, $args);
+    
+            return json_decode(wp_remote_retrieve_body($response), true); // Decode as associative array
         }
     }
 }
