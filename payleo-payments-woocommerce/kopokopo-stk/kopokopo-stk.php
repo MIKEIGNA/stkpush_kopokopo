@@ -3,7 +3,7 @@
  * Plugin Name: Kopokopo STK Push Gateway
  * Plugin URI:  https://thekenyanprogrammer.co.ke/
  * Description: WooCommerce payment gateway using Kopokopo STK Push with a "Pay Now" button before checkout.
- * Version:     1.1.3
+ * Version:     1.1.5
  * Author:      Jovi
  * Author URI:  https://thekenyanprogrammer.co.ke/
  * License:     GPL-2.0+
@@ -126,10 +126,24 @@ function init_kopokopo_gateway()
                         },
                         success: function(response) {
                             if (response.success) {
+                                console.log({
+                                    action: 'kopokopo_stk_push',
+                                    phone: phone,
+                                    amount: amount
+                                });
+
                                 $('#kopokopo_status').text('Payment request sent. Please complete on your phone.');
                                 $('#kopokopo_payment_status').val('1');
+                                console.log('Payment request sent successfully:', response);
                             } else {
+                                console.log({
+                                    action: 'kopokopo_stk_push',
+                                    phone: phone,
+                                    amount: amount
+                                });
+
                                 $('#kopokopo_status').text('Payment failed: ' + response.message);
+                                console.error('Error occurred:', xhr.responseText);
                             }
                         }
                     });
