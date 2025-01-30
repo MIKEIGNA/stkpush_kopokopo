@@ -3,7 +3,7 @@
  * Plugin Name: Kopokopo STK Push Gateway
  * Plugin URI:  https://thekenyanprogrammer.co.ke/
  * Description: WooCommerce payment gateway using Kopokopo STK Push with a "Pay Now" button before checkout.
- * Version:     1.1.7
+ * Version:     1.1.8
  * Author:      Jovi
  * Author URI:  https://thekenyanprogrammer.co.ke/
  * License:     GPL-2.0+
@@ -25,9 +25,8 @@ function add_kopokopo_gateway($gateways)
 add_action('plugins_loaded', 'init_kopokopo_gateway');
 function init_kopokopo_gateway()
 {
-    // Make sure the WC_Payment_Gateway class exists (i.e., WooCommerce is active)
     if (!class_exists('WC_Payment_Gateway')) {
-        return;
+        return; // WooCommerce not active
     }
 
     class WC_Kopokopo_Gateway extends WC_Payment_Gateway
@@ -60,6 +59,28 @@ function init_kopokopo_gateway()
             // AJAX hooks for STK push
             add_action('wp_ajax_kopokopo_stk_push', array($this, 'kopokopo_stk_push'));
             add_action('wp_ajax_nopriv_kopokopo_stk_push', array($this, 'kopokopo_stk_push'));
+
+            // Handle callback if ?kopokopo_callback=1 is present
+            add_action('init', array($this, 'maybe_handle_kopokopo_callback'));
+        }
+
+        /**
+         * If KopoKopo calls your Callback URL (e.g. https://YOURDOMAIN.com/?kopokopo_callback=1),
+         * we return a JSON success response for demonstration.
+         */
+        public function maybe_handle_kopokopo_callback()
+        {
+            if (isset($_GET['kopokopo_callback']) && $_GET['kopokopo_callback'] == 1) {
+                // Log the callback data if you like
+                // error_log("Kopokopo callback: " . print_r($_REQUEST, true));
+
+                // Return a JSON success response
+                header('Content-Type: application/json; charset=utf-8');
+                wp_send_json(array(
+                    'status'  => 'success',
+                    'message' => 'Kopokopo callback received.'
+                ), 200);
+            }
         }
 
         /**
@@ -99,7 +120,7 @@ function init_kopokopo_gateway()
                 'callback_url' => array(
                     'title'       => 'Callback URL',
                     'type'        => 'text',
-                    'description' => 'Publicly accessible URL for KopoKopo to send payment confirmation.',
+                    'description' => 'Publicly accessible URL KopoKopo will send payment confirmation to. Example: https://YOURDOMAIN.com/?kopokopo_callback=1',
                 ),
             );
         }
@@ -123,6 +144,7 @@ function init_kopokopo_gateway()
                jQuery(document).ready(function($) {
                    $('#kopokopo_pay_now').on('click', function() {
                        var phone = $('#kopokopo_phone').val();
+                       // The current cart total
                        var total = '<?php echo WC()->cart->total; ?>';
 
                        // Basic validation for a phone number
@@ -206,7 +228,8 @@ function init_kopokopo_gateway()
             // Attempt to find or create a WooCommerce order in session
             $order_id = WC()->session->get('order_id');
             if (!$order_id) {
-                // Create an empty/draft order for demonstration
+                // Create a draft order for demonstration.
+                // Note: This order will have 0 total if no items are added.
                 $order = wc_create_order();
                 $order_id = $order->get_id();
 
@@ -261,7 +284,6 @@ function init_kopokopo_gateway()
 
             $response = wp_remote_post($url, $args);
             if (is_wp_error($response)) {
-                // Could log error details
                 return false;
             }
             $data = json_decode(wp_remote_retrieve_body($response), true);
@@ -279,8 +301,7 @@ function init_kopokopo_gateway()
         {
             $url = 'https://api.kopokopo.com/api/v1/incoming_payments';
 
-            // If $order is a draft with no items, get_total() might be 0. 
-            // In real usage, you'd do STK push after order is created with items.
+            // If $order is a draft with no items, get_total() may be 0.
             $body = [
                 'payment_channel' => 'M-PESA STK Push',
                 'till_number'     => $this->till_number,
@@ -289,7 +310,7 @@ function init_kopokopo_gateway()
                 ],
                 'amount' => [
                     'currency' => 'KES',
-                    'value'    => $order->get_total(), // or use $amount if you prefer
+                    'value'    => $order->get_total(), // or pass $amount if you prefer
                 ],
                 '_links' => [
                     'callback_url' => $this->callback_url,
