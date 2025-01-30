@@ -3,7 +3,7 @@
  * Plugin Name: Kopokopo STK Push Gateway
  * Plugin URI:  https://thekenyanprogrammer.co.ke/
  * Description: WooCommerce payment gateway using Kopokopo STK Push with a "Pay Now" button before checkout.
- * Version:     1.1.0
+ * Version:     1.1.1
  * Author:      Jovi
  * Author URI:  https://thekenyanprogrammer.co.ke/
  * License:     GPL-2.0+
@@ -98,7 +98,7 @@ function init_kopokopo_gateway()
             <p><?php echo esc_html($this->description); ?></p>
             <fieldset>
                 <label for="kopokopo_phone">Phone Number <span class="required">*</span></label>
-                <input type="text" id="kopokopo_phone" name="kopokopo_phone" required placeholder="2547XXXXXXXX" />
+                <input type="text" id="kopokopo_phone" name="kopokopo_phone" required placeholder="07XXXXXXXX" />
                 <button type="button" id="kopokopo_pay_now" class="button">Pay Now</button>
                 <p id="kopokopo_status" style="margin-top: 10px;"></p>
                 <input type="hidden" id="kopokopo_payment_status" name="kopokopo_payment_status" value="0">
@@ -110,8 +110,8 @@ function init_kopokopo_gateway()
                         var phone = $('#kopokopo_phone').val();
                         var total = '<?php echo WC()->cart->get_total(); ?>';
 
-                        if (!phone || !phone.match(/^2547\d{8}$/)) {
-                            alert('Please enter a valid M-PESA phone number (e.g., 2547XXXXXXXX)');
+                        if (!phone || !phone.match(/^07\d{8}$/)) {
+                            alert('Please enter a valid M-PESA phone number (e.g., 07XXXXXXXX)');
                             return;
                         }
 
@@ -152,6 +152,9 @@ function init_kopokopo_gateway()
         {
             $phone = sanitize_text_field($_POST['phone']);
             $amount = sanitize_text_field($_POST['amount']);
+
+            // Convert 07XXXXXXXX to 2547XXXXXXXX
+            $phone = '254' . substr($phone, 1);
 
             $token = $this->get_access_token();
             if (!$token) {
