@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit; // Prevent direct access
 }
 
-// Register the payment gateway
+// Add Kopokopo to the list of WooCommerce payment gateways
 add_filter('woocommerce_payment_gateways', 'add_kopokopo_gateway');
 function add_kopokopo_gateway($gateways)
 {
@@ -21,10 +21,15 @@ function add_kopokopo_gateway($gateways)
     return $gateways;
 }
 
-// Define Kopokopo Payment Gateway
+// Initialize the gateway only after WooCommerce is fully loaded
 add_action('plugins_loaded', 'init_kopokopo_gateway');
 function init_kopokopo_gateway()
 {
+    // Make sure the WC_Payment_Gateway class exists (i.e., WooCommerce is active)
+    if (!class_exists('WC_Payment_Gateway')) {
+        return;
+    }
+
     class WC_Kopokopo_Gateway extends WC_Payment_Gateway
     {
         public function __construct()
@@ -34,66 +39,73 @@ function init_kopokopo_gateway()
             $this->method_title       = 'Kopokopo STK Push';
             $this->method_description = 'Pay via Kopokopo STK Push before placing your order.';
 
-            // Load settings fields
+            // Load the settings
             $this->init_form_fields();
             $this->init_settings();
 
-            $this->enabled        = $this->get_option('enabled');
-            $this->title          = $this->get_option('title');
-            $this->description    = $this->get_option('description');
-            $this->client_id      = $this->get_option('client_id');
-            $this->client_secret  = $this->get_option('client_secret');
-            $this->till_number    = $this->get_option('till_number');
-            $this->callback_url   = $this->get_option('callback_url');
+            $this->enabled      = $this->get_option('enabled');
+            $this->title        = $this->get_option('title');
+            $this->description  = $this->get_option('description');
+            $this->client_id    = $this->get_option('client_id');
+            $this->client_secret= $this->get_option('client_secret');
+            $this->till_number  = $this->get_option('till_number');
+            $this->callback_url = $this->get_option('callback_url');
 
-            add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
+            // Save admin settings
+            add_action(
+                'woocommerce_update_options_payment_gateways_' . $this->id,
+                array($this, 'process_admin_options')
+            );
 
-            // AJAX handler for initiating STK push
+            // AJAX hooks for STK push
             add_action('wp_ajax_kopokopo_stk_push', array($this, 'kopokopo_stk_push'));
             add_action('wp_ajax_nopriv_kopokopo_stk_push', array($this, 'kopokopo_stk_push'));
         }
 
+        /**
+         * Admin form fields
+         */
         public function init_form_fields()
         {
             $this->form_fields = array(
                 'enabled' => array(
-                    'title'   => 'Enable/Disable',
-                    'type'    => 'checkbox',
-                    'label'   => 'Enable Kopokopo STK Push',
-                    'default' => 'yes',
+                    'title'       => 'Enable/Disable',
+                    'type'        => 'checkbox',
+                    'label'       => 'Enable Kopokopo STK Push',
+                    'default'     => 'yes',
                 ),
                 'title' => array(
-                    'title'   => 'Title',
-                    'type'    => 'text',
-                    'default' => 'Kopokopo STK Push',
+                    'title'       => 'Title',
+                    'type'        => 'text',
+                    'default'     => 'Kopokopo STK Push',
                 ),
                 'description' => array(
-                    'title'   => 'Description',
-                    'type'    => 'textarea',
-                    'default' => 'Enter your phone number and click "Pay Now" to receive an M-PESA prompt.',
+                    'title'       => 'Description',
+                    'type'        => 'textarea',
+                    'default'     => 'Enter your phone number and click "Pay Now" to receive an M-PESA prompt.',
                 ),
                 'client_id' => array(
-                    'title'   => 'Kopokopo Client ID',
-                    'type'    => 'text',
+                    'title'       => 'Kopokopo Client ID',
+                    'type'        => 'text',
                 ),
                 'client_secret' => array(
-                    'title'   => 'Kopokopo Client Secret',
-                    'type'    => 'password',
+                    'title'       => 'Kopokopo Client Secret',
+                    'type'        => 'password',
                 ),
                 'till_number' => array(
-                    'title'   => 'Kopokopo Till Number',
-                    'type'    => 'text',
+                    'title'       => 'Kopokopo Till Number',
+                    'type'        => 'text',
                 ),
                 'callback_url' => array(
-                    'title'   => 'Callback URL',
-                    'type'    => 'text',
-                    'description' => 'This must be a publicly accessible URL for KopoKopo to send confirmation.',
+                    'title'       => 'Callback URL',
+                    'type'        => 'text',
+                    'description' => 'Publicly accessible URL for KopoKopo to send payment confirmation.',
                 ),
             );
         }
 
         /**
-         * Render the payment fields at checkout
+         * Payment fields shown on the checkout
          */
         public function payment_fields()
         {
@@ -113,7 +125,7 @@ function init_kopokopo_gateway()
                        var phone = $('#kopokopo_phone').val();
                        var total = '<?php echo WC()->cart->total; ?>';
 
-                       // Basic phone check
+                       // Basic validation for a phone number
                        if (!phone || !phone.match(/^07\d{8}$/)) {
                            alert('Please enter a valid M-PESA phone number (e.g., 07XXXXXXXX)');
                            return;
@@ -135,8 +147,8 @@ function init_kopokopo_gateway()
                                    $('#kopokopo_status').text('Payment request sent. Please complete on your phone.');
                                    $('#kopokopo_payment_status').val('1');
                                } else {
+                                   console.error('Kopokopo STK Error:', response.message);
                                    $('#kopokopo_status').text('Payment failed: ' + response.message);
-                                   console.error('Error occurred:', response.message);
                                }
                            },
                            error: function(xhr, status, error) {
@@ -146,8 +158,8 @@ function init_kopokopo_gateway()
                        });
                    });
 
+                   // Prevent placing the order if STK push wasn't triggered/completed
                    $('form.checkout').on('submit', function(e) {
-                       // Ensure user clicked "Pay Now" and phone STK push has been triggered
                        if ($('#kopokopo_payment_status').val() !== '1') {
                            e.preventDefault();
                            alert('Please complete payment before placing the order.');
@@ -159,15 +171,12 @@ function init_kopokopo_gateway()
         }
 
         /**
-         * Process the WooCommerce order payment.
-         * This method is triggered when the user actually clicks "Place Order".
+         * When user clicks "Place Order" in WC, process payment (mark on-hold).
          */
         public function process_payment($order_id)
         {
             $order = wc_get_order($order_id);
-            // Mark the order as on-hold to await external confirmation
-            $order->update_status('on-hold', 'Awaiting payment confirmation from Kopokopo STK Push.');
-
+            $order->update_status('on-hold', 'Awaiting Kopokopo STK push confirmation');
             return array(
                 'result'   => 'success',
                 'redirect' => $this->get_return_url($order),
@@ -179,25 +188,25 @@ function init_kopokopo_gateway()
          */
         public function kopokopo_stk_push()
         {
+            // Retrieve phone and amount
             $phone  = isset($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
             $amount = isset($_POST['amount']) ? sanitize_text_field($_POST['amount']) : 0;
 
-            // Convert phone format: 07xxxxxxxx -> 2547xxxxxxxx
+            // Convert 07xxxxxxx -> 2547xxxxxxx
             if (substr($phone, 0, 1) === '0') {
                 $phone = '254' . substr($phone, 1);
             }
 
-            // Get OAuth access token
+            // Get OAuth token
             $token = $this->get_access_token();
             if (!$token) {
-                wp_send_json_error(['message' => 'Authentication failed. No valid token.']);
+                wp_send_json_error(['message' => 'Authentication failed (no token).']);
             }
 
-            // Try to fetch an existing order from session
+            // Attempt to find or create a WooCommerce order in session
             $order_id = WC()->session->get('order_id');
             if (!$order_id) {
-                // If no order, create a new one (draft) for demonstration.
-                // Note: This order will not have line items unless you add them.
+                // Create an empty/draft order for demonstration
                 $order = wc_create_order();
                 $order_id = $order->get_id();
 
@@ -211,26 +220,24 @@ function init_kopokopo_gateway()
                 wp_send_json_error(['message' => 'Order not found.']);
             }
 
-            // Attempt the STK push
+            // Do the STK push
             $response = $this->initiate_stk_push($order, $phone, $token);
-            error_log("Kopokopo STK Push Response: " . print_r($response, true));
-
-            // KopoKopo success is indicated by a "data" object containing an "id"
             if ($response && isset($response['data']['id'])) {
+                // If success from KopoKopo
                 wp_send_json_success([
                     'message'  => 'STK Push sent successfully.',
-                    'order_id' => $order_id
+                    'order_id' => $order_id,
                 ]);
             } else {
                 wp_send_json_error([
-                    'message'   => 'STK Push failed.',
-                    'response'  => $response
+                    'message'  => 'STK Push failed.',
+                    'response' => $response,
                 ]);
             }
         }
 
         /**
-         * Retrieves an OAuth token from KopoKopo
+         * Get an OAuth token from KopoKopo
          */
         private function get_access_token()
         {
@@ -240,7 +247,7 @@ function init_kopokopo_gateway()
             $body = http_build_query([
                 'grant_type'    => 'client_credentials',
                 'client_id'     => $this->client_id,
-                'client_secret' => $this->client_secret
+                'client_secret' => $this->client_secret,
             ]);
 
             $args = [
@@ -249,78 +256,60 @@ function init_kopokopo_gateway()
                     'Content-Type' => 'application/x-www-form-urlencoded',
                     'Accept'       => 'application/json'
                 ],
-                'timeout' => 60
+                'timeout' => 60,
             ];
 
-            error_log("Kopokopo Access Token Request: " . print_r($args, true));
-
             $response = wp_remote_post($url, $args);
-            error_log("Kopokopo Access Token Response: " . print_r($response, true));
-
             if (is_wp_error($response)) {
-                error_log("Kopokopo Access Token WP Error: " . $response->get_error_message());
+                // Could log error details
                 return false;
             }
-
             $data = json_decode(wp_remote_retrieve_body($response), true);
-            error_log("Kopokopo Access Token Decoded: " . print_r($data, true));
 
             if (!empty($data['access_token'])) {
-                error_log('Access token retrieved successfully.');
                 return $data['access_token'];
             }
-
-            error_log('Failed to retrieve access token from KopoKopo.');
             return false;
         }
 
         /**
-         * Initiates an STK push to the KopoKopo API
+         * Send the STK push request
          */
         private function initiate_stk_push($order, $phone_number, $token)
         {
-            error_log('Initiating STK push...');
-
             $url = 'https://api.kopokopo.com/api/v1/incoming_payments';
+
+            // If $order is a draft with no items, get_total() might be 0. 
+            // In real usage, you'd do STK push after order is created with items.
             $body = [
                 'payment_channel' => 'M-PESA STK Push',
                 'till_number'     => $this->till_number,
                 'subscriber'      => [
-                    'phone_number' => $phone_number
+                    'phone_number' => $phone_number,
                 ],
                 'amount' => [
                     'currency' => 'KES',
-                    // If your newly-created order has no items, ensure it has a total > 0
-                    'value'    => $order->get_total(),
+                    'value'    => $order->get_total(), // or use $amount if you prefer
                 ],
                 '_links' => [
                     'callback_url' => $this->callback_url,
                 ],
             ];
 
-            error_log('STK push body: ' . json_encode($body));
-
             $args = [
                 'body'    => json_encode($body),
                 'headers' => [
                     'Authorization' => 'Bearer ' . $token,
                     'Content-Type'  => 'application/json',
-                    'Accept'        => 'application/json'
+                    'Accept'        => 'application/json',
                 ],
-                'timeout' => 60
+                'timeout' => 60,
             ];
 
-            error_log('STK push args: ' . json_encode($args));
-
             $response = wp_remote_post($url, $args);
-
             if (is_wp_error($response)) {
-                error_log('STK push request failed: ' . $response->get_error_message());
                 return false;
-            } else {
-                error_log('STK push raw response: ' . wp_remote_retrieve_body($response));
             }
-
             return json_decode(wp_remote_retrieve_body($response), true);
         }
     }
