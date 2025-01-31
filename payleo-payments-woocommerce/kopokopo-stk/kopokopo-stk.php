@@ -98,9 +98,9 @@ function init_kopokopo_gateway()
                 'kopokopo/v1',
                 '/kopokopo_callback',
                 [
-                    'methods'  => ['GET', 'POST'], // Kopokopo typically sends POST
-                    'callback' => [$this, 'handle_kopokopo_rest_callback'],
-                    'permission_callback' => '__return_true', // Adjust as needed for security
+                    'methods'             => ['GET', 'POST'], // Kopokopo typically sends POST
+                    'callback'            => [$this, 'handle_kopokopo_rest_callback'],
+                    'permission_callback' => '__return_true', // Allows public access
                 ]
             );
         }
@@ -327,7 +327,7 @@ function init_kopokopo_gateway()
         {
             $url = 'https://api.kopokopo.com/oauth/token';
 
-            // KopoKopo expects x-www-form-urlencoded for client_credentials
+            // Kopokopo expects x-www-form-urlencoded for client_credentials
             $body = http_build_query([
                 'grant_type'    => 'client_credentials',
                 'client_id'     => $this->client_id,
