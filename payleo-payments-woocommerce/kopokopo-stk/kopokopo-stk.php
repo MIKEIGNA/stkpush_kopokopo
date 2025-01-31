@@ -21,8 +21,10 @@ function add_kopokopo_gateway($gateways)
     return $gateways;
 }
 
+
 // Initialize the gateway only after WooCommerce is fully loaded
 add_action('plugins_loaded', 'init_kopokopo_gateway');
+
 function init_kopokopo_gateway()
 {
     if (!class_exists('WC_Payment_Gateway')) {
@@ -58,12 +60,25 @@ function init_kopokopo_gateway()
                 array($this, 'process_admin_options')
             );
 
+            error_log(' jovi Registering wp_ajax_kopokopo_stk_push now...');
+            $log_message = "jovi all the variables: \n" .
+                " - client_id: " . $this->client_id . "\n" .
+                " - client_secret: " . $this->client_secret . "\n" . 
+                " - till_number: " . $this->till_number . "\n" .
+                " - callback_url: " . $this->callback_url; 
+
+            error_log($log_message);
+
             // AJAX hooks for STK push
-            add_action('wp_ajax_kopokopo_stk_push', array($this, 'kopokopo_stk_push'));
-            add_action('wp_ajax_nopriv_kopokopo_stk_push', array($this, 'kopokopo_stk_push'));
+            // add_action('wp_ajax_kopokopo_stk_push', array($this, 'kopokopo_stk_push'));
+            // add_action('wp_ajax_nopriv_kopokopo_stk_push', array($this, 'kopokopo_stk_push'));
+
+            add_action('wp_ajax_kopokopo_stk_push', 'my_callback');
+            add_action('wp_ajax_nopriv_kopokopo_stk_push', 'my_callback');
 
             // REST API callback route
             add_action('rest_api_init', array($this, 'register_kopokopo_rest_routes'));
+            error_log(' jovi after Registering wp_ajax_kopokopo_stk_push later...');
         }
 
         /**
@@ -90,13 +105,14 @@ function init_kopokopo_gateway()
         public function handle_kopokopo_rest_callback(\WP_REST_Request $request)
         {
             // If needed, log the data for debugging:
-            // error_log("Kopokopo Callback Data: " . print_r($request->get_params(), true));
+            error_log("jovi Kopokopo Callback Data: " . print_r($request->get_params(), true));
 
             // Return a success JSON response
             $response_data = array(
                 'status'  => 'success',
                 'message' => 'Kopokopo callback received.'
             );
+            error_log('jovi Rest callback in handle_kopokopo_rest_callback success...');
 
             return new \WP_REST_Response($response_data, 200);
         }
@@ -193,7 +209,7 @@ function init_kopokopo_gateway()
                            },
                            error: function(xhr, status, error) {
                                console.error('AJAX Error:', status, error, xhr.responseText);
-                               $('#kopokopo_status').text('An error occurred. Please try again.');
+                               $('#kopokopo_status').text('An error occurred. Please try again.' + xhr.responseText + error);
                            }
                        });
                    });
@@ -217,6 +233,9 @@ function init_kopokopo_gateway()
         {
             $order = wc_get_order($order_id);
             $order->update_status('on-hold', 'Awaiting Kopokopo STK push confirmation');
+
+            error_log("jovi process_payment success... order : $order");
+
             return array(
                 'result'   => 'success',
                 'redirect' => $this->get_return_url($order),
@@ -226,7 +245,7 @@ function init_kopokopo_gateway()
         /**
          * AJAX callback to initiate STK push
          */
-        public function kopokopo_stk_push()
+        public function my_callback()#kopokopo_stk_push()
         {
             // Retrieve phone and amount
             $phone  = isset($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
@@ -242,6 +261,7 @@ function init_kopokopo_gateway()
             if (!$token) {
                 wp_send_json_error(['message' => 'Authentication failed (no token).']);
             }
+            error_log("jovi after kopokopo_stk_push token gotten  $token");
 
             // Attempt to find or create a WooCommerce order in session
             $order_id = WC()->session->get('order_id');
@@ -260,9 +280,11 @@ function init_kopokopo_gateway()
             if (!$order) {
                 wp_send_json_error(['message' => 'Order not found.']);
             }
+            error_log("jovi my order id  $order_id");
 
             // Do the STK push
             $response = $this->initiate_stk_push($order, $phone, $token);
+            error_log("jovi response after initiate_stk_push response  $response");
             if ($response && isset($response['data']['id'])) {
                 // If success from KopoKopo
                 wp_send_json_success([
@@ -294,17 +316,20 @@ function init_kopokopo_gateway()
             $args = [
                 'body'    => $body,
                 'headers' => [
-                    'Content-Type' => 'application/x-www-form-urlencoded',
+                    // 'Content-Type' => 'application/x-www-form-urlencoded',
                     'Accept'       => 'application/json'
                 ],
                 'timeout' => 60,
             ];
 
             $response = wp_remote_post($url, $args);
+            error_log("jovi get access_token response  $response");
             if (is_wp_error($response)) {
                 return false;
             }
             $data = json_decode(wp_remote_retrieve_body($response), true);
+            error_log("jovi get access_token data $data");
+
 
             if (!empty($data['access_token'])) {
                 return $data['access_token'];
@@ -346,6 +371,7 @@ function init_kopokopo_gateway()
             ];
 
             $response = wp_remote_post($url, $args);
+            error_log("jovi initiate_stk_push response wp_remote_post : $response");
             if (is_wp_error($response)) {
                 return false;
             }
@@ -353,3 +379,26 @@ function init_kopokopo_gateway()
         }
     }
 }
+
+// add_action('init', function () {
+//     // Let’s log all wp_ajax_* hooks to the debug log.
+//     // Make sure WP_DEBUG_LOG is enabled in wp-config.php
+//     if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+//         global $wp_filter;
+
+//         // We'll loop through the global $wp_filter to find anything starting with wp_ajax
+//         foreach ($wp_filter as $hook_name => $hook_obj) {
+//             if (strpos($hook_name, 'wp_ajax_') === 0) {
+//                 error_log("Hook found: $hook_name");
+//                 // If you want details about what functions are attached:
+//                 if (!empty($hook_obj->callbacks)) {
+//                     foreach ($hook_obj->callbacks as $priority => $functions) {
+//                         foreach ($functions as $function_id => $data) {
+//                             error_log(" - Priority: $priority, Function: $function_id");
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// });
