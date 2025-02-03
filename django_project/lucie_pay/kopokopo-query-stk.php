@@ -3,7 +3,7 @@
  * Plugin Name: Kopokopo Query STK Push Gateway
  * Plugin URI:  https://omukiguy.com
  * Description: A simple WooCommerce payment gateway using "Query APIs" style logic for Kopokopo STK push. Adds a phone field and a "Pay Now" button at checkout.
- * Version:     1.3.1
+ * Version:     1.3.2
  * Author:      Jovis
  * Author URI:  https://omukiguy.com
  * Text Domain: kopokopo-query-stk
@@ -41,6 +41,7 @@ function kopokopo_query_stk_init() {
 		public $client_id;
 		public $client_secret;
 		public $till_number;
+		public $callback_url;
 
 		/**
 		 * Constructor.
@@ -62,9 +63,14 @@ function kopokopo_query_stk_init() {
 			$this->client_id     = $this->get_option( 'client_id' );
 			$this->client_secret = $this->get_option( 'client_secret' );
 			$this->till_number   = $this->get_option( 'till_number' );
+			$this->callback_url  = $this->get_option( 'callback_url' );
 
 			// Save admin settings.
 			add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, [ $this, 'process_admin_options' ] );
+
+			// Register AJAX callbacks for sending STK push.
+			add_action( 'wp_ajax_kopokopo_query_stk_push', [ $this, 'kopokopo_query_stk_push' ] );
+			add_action( 'wp_ajax_nopriv_kopokopo_query_stk_push', [ $this, 'kopokopo_query_stk_push' ] );
 		}
 
 		/**
@@ -104,6 +110,12 @@ function kopokopo_query_stk_init() {
 					'title'       => 'Kopokopo Till Number',
 					'type'        => 'text',
 					'description' => 'Enter your Kopokopo Till Number, e.g. K123456.',
+				],
+				'callback_url' => [
+					'title'       => 'Callback URL',
+					'type'        => 'text',
+					'description' => 'Enter your callback URL. This is required by Kopokopo.',
+					'default'     => '',
 				],
 			];
 		}
@@ -235,7 +247,9 @@ function kopokopo_query_stk_init() {
 				'metadata' => [
 					'notes' => 'WooCommerce STK Payment'
 				],
-				'_links' => new stdClass()
+				'_links' => [
+					'callback_url' => $this->callback_url ? $this->callback_url : ''
+				],
 			];
 
 			$stk_headers = [
@@ -296,7 +310,6 @@ function kopokopo_query_add_gateway_class( $gateways ) {
  * Register the AJAX callback outside the class so it is always available.
  */
 function kopokopo_query_stk_push_callback() {
-	// Instantiate the gateway and call its AJAX handler.
 	$gateway = new WC_Gateway_Kopokopo_Query_STK();
 	$gateway->kopokopo_query_stk_push();
 }
