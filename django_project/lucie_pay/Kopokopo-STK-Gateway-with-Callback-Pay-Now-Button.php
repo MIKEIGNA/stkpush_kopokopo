@@ -337,5 +337,6 @@ function kopokopo_handle_callback( WP_REST_Request $request ) {
 		$order->update_status( 'failed', 'Kopokopo payment failed via callback.' );
 		$order->add_order_note( 'Kopokopo payment failed. Details: ' . print_r( $data, true ) );
 	}
+	$order->save(); // Explicitly save the order changes.
 	return new WP_REST_Response( [ 'status' => 'success', 'message' => 'Callback processed.' ], 200 );
 }
