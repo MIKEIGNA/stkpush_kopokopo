@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name: Kopokopo STK Gateway with Callback & Pay Now Button
- * Plugin URI:  https://omukiguy.com
+ * Plugin URI:  https://thekenyanprogrammer.co.ke
  * Description: A WooCommerce payment gateway that initiates a Kopokopo STK push when the customer clicks a custom “Pay Now” button at checkout. The customer then completes the order by clicking the standard Place Order button. A REST callback endpoint updates order statuses based on the payment result.
- * Version:     1.4.0
+ * Version:     1.5.0
  * Author:      Jovi
- * Author URI:  https://omukiguy.com
+ * Author URI:  https://thekenyanprogrammer.co.ke
  * Text Domain: kopokopo-stk-gateway
  */
 
